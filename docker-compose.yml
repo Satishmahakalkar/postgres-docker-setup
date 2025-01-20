@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  postgres-primary:
+    image: postgres:14
+    environment:
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=mydb
+    ports:
+      - "5432:5432"
+    networks:
+      - pg_network
+    volumes:
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - postgres_data_primary:/var/lib/postgresql/data
+
+  postgres-replica:
+    image: postgres:14
+    environment:
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=mydb
+    networks:
+      - pg_network
+    depends_on:
+      - postgres-primary
+    volumes:
+      - postgres_data_replica:/var/lib/postgresql/data
+
+  pgpool:
+    image: pgpool/pgpool:latest   # Updated to the official pgpool image
+    environment:
+      - PGPOOL_BACKEND_NODES=0=postgres-primary:5432,1=postgres-replica:5432
+      - PGPOOL_SR_CHECK_PERIOD=10
+      - PGPOOL_SR_CHECK_USER=postgres
+      - PGPOOL_SR_CHECK_PASSWORD=secret
+      - PGPOOL_PORT=5432
+      - PGPOOL_ADMIN_PASSWORD=secret
+    ports:
+      - "9999:9999"
+    networks:
+      - pg_network
+
+  failover:
+    image: ubuntu
+    command: ["bash", "-c", "sleep infinity"]
+    networks:
+      - pg_network
+
+volumes:
+  postgres_data_primary:
+  postgres_data_replica:
+
+networks:
+  pg_network:
+    driver: bridge
+
