@@ -1,4 +1,4 @@
-PostgreSQL with Read Replica, Automatic Failover and Load Balancing
+PostgreSQL with Read Replica, Automatic Failover and Load Balancing In Ubuntu OS
 
 Introduction
 
